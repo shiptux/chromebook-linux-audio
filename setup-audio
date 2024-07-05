@@ -37,13 +37,12 @@ def install_ucm():
         exit(1)
 
     for platform in ["adl", "apl", "avs", "cezanne", "cml", "glk", "jsl", "mendocino", "mt8183", "picasso", "stoney"]:
-        cpdir(f"/tmp/chromebook-ucm-conf/{platform}", "/usr/share/alsa/ucm2/conf.d")
-
-    cpdir("/tmp/chromebook-ucm-conf/common", "/usr/share/alsa/ucm2/common")
-    cpdir("/tmp/chromebook-ucm-conf/codecs", "/usr/share/alsa/ucm2/codecs")
-    cpdir("/tmp/chromebook-ucm-conf/platforms", "/usr/share/alsa/ucm2/platforms")
-    cpdir("/tmp/chromebook-ucm-conf/sof-rt5682", "/usr/share/alsa/ucm2/conf.d/sof-rt5682")
-    cpdir("/tmp/chromebook-ucm-conf/sof-cs42l42", "/usr/share/alsa/ucm2/conf.d/sof-cs42l42")
+        cpdir(f"/tmp/chromebook-ucm-conf/{platform}", f"{overlay_path}/usr/share/alsa/ucm2/conf.d")
+        cpdir("/tmp/chromebook-ucm-conf/common", f"{overlay_path}/usr/share/alsa/ucm2/common")
+        cpdir("/tmp/chromebook-ucm-conf/codecs", f"{overlay_path}/usr/share/alsa/ucm2/codecs")
+        cpdir("/tmp/chromebook-ucm-conf/platforms", f"{overlay_path}/usr/share/alsa/ucm2/platforms")
+        cpdir("/tmp/chromebook-ucm-conf/sof-rt5682", f"{overlay_path}/usr/share/alsa/ucm2/conf.d/sof-rt5682")
+        cpdir("/tmp/chromebook-ucm-conf/sof-cs42l42", f"{overlay_path}/usr/share/alsa/ucm2/conf.d/sof-cs42l42")
 
 
 def ubuntu():
@@ -150,8 +149,8 @@ def avs_audio():
     avs_tplg_url = f"https://github.com/thesofproject/avs-topology-xml/releases/download/v{avs_tplg_ver}/avs-topology_{avs_tplg_ver}.tar.gz"
     urlretrieve(url=avs_tplg_url, filename="/tmp/avs_tplg/avs-tplg.tar.gz")
     bash("tar xf /tmp/avs_tplg/avs-tplg.tar.gz -C /tmp/avs_tplg")
-    mkdir("/lib/firmware/intel/avs", create_parents=True)
-    cpdir("/tmp/avs_tplg/avs-topology/lib/firmware/intel/avs", "/lib/firmware/intel/avs")
+    mkdir(f"{overlay_path}/lib/firmware/intel/avs", create_parents=True)
+    cpdir("/tmp/avs_tplg/avs-topology/lib/firmware/intel/avs", f"{overlay_path}/lib/firmware/intel/avs")
 
     # Force AVS driver since the kernel will use the SKL driver by default
     print_status("Installing modprobe config")
@@ -170,8 +169,8 @@ def avs_audio():
 
     # updated avs dsp firmware recently got merged upstream but is not packaged in any distro yet
     print_status("Installing AVS firmware")
-    mkdir("/lib/firmware/intel/avs/skl")
-    mkdir("/lib/firmware/intel/avs/apl")
+    mkdir(f"{overlay_path}/lib/firmware/intel/avs/skl")
+    mkdir(f"{overlay_path}/lib/firmware/intel/avs/apl")
     try:
         urlretrieve("https://git.kernel.org/pub/scm/linux/kernel/git/firmware/linux-firmware.git/plain/intel/avs/apl/"
                 "dsp_basefw.bin", filename="/lib/firmware/intel/avs/apl/dsp_basefw.bin")
@@ -248,13 +247,13 @@ def sof_audio(platform):
     if platform == "adl":
         tplgs = ["cs35l41", "max98357a-rt5682-4ch", "max98357a-rt5682", "max98360a-cs42l42", "max98360a-nau8825", "max98360a-rt5682-2way", "max98360a-rt5682-4ch", "max98360a-rt5682", "max98373-nau8825", "max98390-rt5682", "max98390-ssp2-rt5682-ssp0", "nau8825", "rt1019-nau8825", "rt1019-rt5682", "rt5682", "rt711", "sdw-max98373-rt5682"]
         for tplg in tplgs:
-            tplg_path="/lib/firmware/intel/sof-tplg"
+            tplg_path="f{overlay_path}/lib/firmware/intel/sof-tplg"
             if path_exists(f"{tplg_path}/sof-adl-{tplg}.tplg"):
                 bash(f"ln -sf {tplg_path}/sof-adl-{tplg}.tplg {tplg_path}/sof-rpl-{tplg}.tplg")
             if path_exists(f"{tplg_path}/sof-adl-{tplg}.tplg.xz"):
                 bash(f"ln -sf {tplg_path}/sof-adl-{tplg}.tplg.xz {tplg_path}/sof-rpl-{tplg}.tplg.xz")
     # JSL needs tplg build from upstream which have not been shipped in distros yet
-    cpdir("conf/sof/tplg", "/lib/firmware/intel/sof-tplg")
+    cpdir("conf/sof/tplg", f"{overlay_path}/lib/firmware/intel/sof-tplg")
 
 
 def hifi2_audio():
@@ -277,14 +276,23 @@ def amd_audio(platform):
     # Install sof firmware and modprobe config on mendocino
     if platform == "mendocino":
         print_status("Installing SOF firmware")
-        mkdir("/lib/firmware/amd/sof/community", create_parents=True)
-        mkdir("/lib/firmware/amd/sof-tplg", create_parents=True)
-        cpdir("conf/amd-sof/fw", "/lib/firmware/amd/sof/community")
-        cpdir("conf/amd-sof/tplg", "/lib/firmware/amd/sof-tplg")
+        mkdir(f"{overlay_path}/lib/firmware/amd/sof/community", create_parents=True)
+        mkdir(f"{overlay_path}/lib/firmware/amd/sof-tplg", create_parents=True)
+        cpdir("conf/amd-sof/fw", f"{overlay_path}/lib/firmware/amd/sof/community")
+        cpdir("conf/amd-sof/tplg", f"{overlay_path}/lib/firmware/amd/sof-tplg")
     elif platform == "stoney":
         print_warning("WARNING: Your audio will not work unless you install a custom kernel")
-        print_warning("You can get a prebuilt kernel from https://fs.nightcore.monster/chromebook/stoney/kernel/latest.tar.xz")
+        print_warning("You can /var/lib/extensions/chromebook-linux-audio/lib/firmware/intel/sof-tplgget a prebuilt kernel from https://fs.nightcore.monster/chromebook/stoney/kernel/latest.tar.xz")
 
+def setup_overlay():
+    # Setup overlay
+    # https://www.reddit.com/r/Fedora/comments/wir3cq/comment/ijhjfah/?context=3
+    print("Setting up systemd-sysext overlay")
+    mkdir(f"{overlay_path}/usr/share/alsa/ucm2/conf.d", True)
+    mkdir(f"{overlay_path}/usr/lib/extension-release.d", True)
+    mkdir (f"{overlay_path}/lib/firmware/intel/sof-tplg", True)
+    cpfile("/etc/os-release", f"{overlay_path}/usr/lib/extension-release.d/extension-release.{extension_name}")
+    bash("systemctl enable systemd-sysext")
 
 if __name__ == "__main__":
     args = process_args()
@@ -313,6 +321,17 @@ if __name__ == "__main__":
 
     # Some distros (Solus) don't have /etc/modprobe.d/ for some reason
     mkdir("/etc/modprobe.d", create_parents=True)
+    extension_name = "chromebook-linux-audio"
+
+    if is_fedora_immutable():
+        overlay_path = f"/var/lib/extensions/{extension_name}"
+        mkdir(f"/var/lib/extensions/{extension_name}")
+    else:
+        overlay_path = ""
+
+    if is_fedora_immutable():
+        #  immutable fedora spins have a read-only /usr dir; we need to use an overlay to "install" the files into it
+        setup_overlay()
 
     # platform specific configuration
     board = get_board()
